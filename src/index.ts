@@ -1,6 +1,5 @@
 import { SolanaCurrency } from "./currencies/SolanaCurrency";
 import { RaydiumToken } from "./tokens/RaydiumToken";
-import { liquidityPoolKeysForRAYSOL } from "./configs/liquidityPoolKeysForRAYSOL";
 import { createRealPayer } from "./utils/createRealPayer";
 import { createWeb3Connection } from "./utils/createWeb3Connection";
 import { WalletUtil } from "./utils/WalletUtil";
@@ -20,7 +19,7 @@ require("dotenv").config();
 
   const amountIn = SwapUtil.askForSwapAmount(SolanaCurrency, balance);
 
-  const amountOut = await SwapUtil.getBestAmountOut(
+  const [amountOut, route] = await SwapUtil.getBestAmountOut(
     connection,
     RaydiumToken,
     amountIn
@@ -31,7 +30,7 @@ require("dotenv").config();
     amountIn,
     amountOut,
     payer,
-    liquidityPoolKeysForRAYSOL
+    route.keys
   );
 
   console.log("Transaction Response: ", transactionResponse);

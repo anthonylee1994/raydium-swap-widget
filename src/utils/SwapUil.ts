@@ -4,6 +4,7 @@ import {
   jsonInfo2PoolKeys,
   Liquidity,
   LiquidityPoolKeysV4,
+  RouteInfo,
   Token,
   TokenAmount,
   Trade,
@@ -41,7 +42,7 @@ const getBestAmountOut = async (
   currencyOut: Token,
   amountIn: CurrencyAmount | TokenAmount,
   slippage = "0.001"
-) => {
+): Promise<[CurrencyAmount, RouteInfo]> => {
   const jsonInfos = await fetchLiquidityInfoList();
 
   if (!jsonInfos) {
@@ -55,22 +56,43 @@ const getBestAmountOut = async (
     poolInfo: sdkParsedInfos[idx],
   }));
 
-  const { amountOut } = Trade.getBestAmountOut({
-    pools,
-    amountIn,
-    currencyOut,
-    slippage: toPercent(slippage),
-  });
+  const { amountOut, minAmountOut, fee, currentPrice, priceImpact, routes } =
+    Trade.getBestAmountOut({
+      pools,
+      amountIn,
+      currencyOut,
+      slippage: toPercent(slippage),
+    });
+
+  console.log(
+    `1 ${amountIn.currency.symbol} ≈ ${currentPrice?.toFixed(
+      currencyOut.decimals
+    )} ${currencyOut.symbol}`
+  );
 
   console.log(
     `Swap ${amountIn.toFixed(amountIn.currency.decimals)} ${
       amountIn.currency.symbol
     } will get ${amountOut.toFixed(currencyOut.decimals)} ${
-      amountOut.currency.symbol
+      currencyOut.symbol
     }.`
   );
 
-  return amountOut;
+  console.log(
+    `Minimum Received:  ${minAmountOut.toFixed(
+      minAmountOut.currency.decimals
+    )} ${minAmountOut.currency.symbol}`
+  );
+
+  console.log(`Price Impact:  ${priceImpact.mul(100).toFixed(8)}%`);
+
+  console.log(
+    `Fees: ${fee
+      .map((f) => `${f.toFixed(f.currency.decimals)} ${f.currency.symbol}`)
+      .join(" ")}`
+  );
+
+  return [amountOut, routes[0]];
 };
 
 const confirmSwapTransaction = async (
