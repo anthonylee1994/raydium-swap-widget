@@ -1,0 +1,29 @@
+{
+  "name": "raydium-swap-widget",
+  "version": "1.0.0",
+  "main": "src/index.ts",
+  "scripts": {
+    "start": "ts-node src/index.ts"
+  },
+  "author": "Anthony Lee",
+  "license": "MIT",
+  "dependencies": {
+    "@raydium-io/raydium-sdk": "^1.1.0-beta.0",
+    "@solana/wallet-adapter-base": "^0.9.5",
+    "@solana/wallet-adapter-phantom": "^0.9.3",
+    "@types/bn.js": "^5.1.0",
+    "@types/node": "^17.0.25",
+    "@types/readline-sync": "^1.4.4",
+    "axios": "^0.26.1",
+    "base-58": "^0.0.1",
+    "base58-js": "^1.0.0",
+    "bn.js": "^5.2.0",
+    "dotenv": "^16.0.0",
+    "readline-sync": "^1.4.10",
+    "tweetnacl": "^1.0.3",
+    "typescript": "^4.6.3"
+  },
+  "devDependencies": {
+    "ts-node": "^10.7.0"
+  }
+}
