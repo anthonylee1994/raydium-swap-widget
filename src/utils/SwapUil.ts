@@ -5,17 +5,33 @@ import {
   Liquidity,
   LiquidityPoolKeysV4,
   RouteInfo,
+  SPL_ACCOUNT_LAYOUT,
   Token,
+  TokenAccount,
   TokenAmount,
+  TOKEN_PROGRAM_ID,
   Trade,
 } from "@raydium-io/raydium-sdk";
 import BN from "bn.js";
 import readlineSync from "readline-sync";
 import { fetchLiquidityInfoList } from "./fetchLiquidityInfoList";
 import { sdkParseJsonLiquidityInfo } from "./sdkParseJsonLiquidityInfo";
-import { Connection, Keypair } from "@solana/web3.js";
+import {
+  Connection,
+  Keypair,
+  sendAndConfirmTransaction,
+  PublicKey,
+} from "@solana/web3.js";
 import { toPercent } from "./toPercent";
 import { attachRecentBlockhash } from "./attachRecentBlockhash";
+
+export interface ITokenAccount {
+  publicKey?: PublicKey;
+  mint?: PublicKey;
+  isAssociated?: boolean;
+  amount: BN;
+  isNative: boolean;
+}
 
 const askForSwapAmount = (
   currency: Currency,
@@ -103,6 +119,25 @@ const getBestAmountOut = async (
   return [amountOut, routes[0]];
 };
 
+const fetchWalletAccounts = async (
+  connection: Connection,
+  payer: Keypair
+): Promise<TokenAccount[]> => {
+  const accountInfo = await connection.getTokenAccountsByOwner(
+    payer.publicKey,
+    { programId: TOKEN_PROGRAM_ID }
+  );
+
+  const accounts: TokenAccount[] = [];
+
+  for (const { pubkey, account } of accountInfo.value) {
+    const rawResult = SPL_ACCOUNT_LAYOUT.decode(account.data);
+    accounts.push({ pubkey, accountInfo: rawResult });
+  }
+
+  return accounts;
+};
+
 const confirmSwapTransaction = async (
   connection: Connection,
   amountIn: CurrencyAmount,
@@ -122,7 +157,10 @@ const confirmSwapTransaction = async (
     amountOut,
     fixedSide: "in",
     poolKeys,
-    userKeys: { tokenAccounts: [], owner: payer.publicKey },
+    userKeys: {
+      tokenAccounts: await fetchWalletAccounts(connection, payer),
+      owner: payer.publicKey,
+    },
   });
 
   await attachRecentBlockhash(connection, transaction, payer.publicKey);
@@ -133,10 +171,12 @@ const confirmSwapTransaction = async (
   console.log("Signature Verified: ", transaction.verifySignatures());
   console.log("Transaction:\n", transaction);
 
-  const response = await connection.sendTransaction(transaction, signers, {
-    skipPreflight: true,
-    maxRetries: 5,
-  });
+  const response = await sendAndConfirmTransaction(
+    connection,
+    transaction,
+    signers,
+    { skipPreflight: false }
+  );
 
   return response;
 };
