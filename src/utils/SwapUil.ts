@@ -40,9 +40,9 @@ const askForSwapAmount = (
 const getBestAmountOut = async (
   connection: Connection,
   currencyOut: Token,
-  amountIn: CurrencyAmount | TokenAmount,
+  amountIn: CurrencyAmount,
   slippage = "0.001"
-): Promise<[CurrencyAmount, RouteInfo]> => {
+): Promise<[TokenAmount, RouteInfo]> => {
   const jsonInfos = await fetchLiquidityInfoList();
 
   if (!jsonInfos) {
@@ -56,13 +56,21 @@ const getBestAmountOut = async (
     poolInfo: sdkParsedInfos[idx],
   }));
 
-  const { amountOut, minAmountOut, fee, currentPrice, priceImpact, routes } =
-    Trade.getBestAmountOut({
-      pools,
-      amountIn,
-      currencyOut,
-      slippage: toPercent(slippage),
-    });
+  const {
+    minAmountOut,
+    fee,
+    currentPrice,
+    priceImpact,
+    routes,
+    ...bestAmountOutParams
+  } = Trade.getBestAmountOut({
+    pools,
+    amountIn,
+    currencyOut,
+    slippage: toPercent(slippage),
+  });
+
+  const amountOut = bestAmountOutParams.amountOut as TokenAmount;
 
   console.log(
     `1 ${amountIn.currency.symbol} ≈ ${currentPrice?.toFixed(
@@ -98,7 +106,7 @@ const getBestAmountOut = async (
 const confirmSwapTransaction = async (
   connection: Connection,
   amountIn: CurrencyAmount,
-  amountOut: CurrencyAmount,
+  amountOut: TokenAmount,
   payer: Keypair,
   poolKeys: LiquidityPoolKeysV4
 ) => {
@@ -121,13 +129,12 @@ const confirmSwapTransaction = async (
 
   signers.push(payer);
   transaction.partialSign(...signers);
-  console.log("Signature Verified: ", transaction.verifySignatures());
 
+  console.log("Signature Verified: ", transaction.verifySignatures());
   console.log("Transaction:\n", transaction);
 
   const response = await connection.sendTransaction(transaction, signers, {
     skipPreflight: true,
-    preflightCommitment: "confirmed",
     maxRetries: 5,
   });
 
