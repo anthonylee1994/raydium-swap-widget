@@ -122,10 +122,13 @@ const confirmSwapTransaction = async (
 
   console.log("Transaction:\n", transaction);
 
-  const response = await connection.sendTransaction(transaction, [
-    ...signers,
-    payer,
-  ]);
+  const response = await connection.sendTransaction(
+    transaction,
+    [...signers, payer],
+    {
+      skipPreflight: true,
+    }
+  );
 
   return response;
 };
