@@ -118,17 +118,18 @@ const confirmSwapTransaction = async (
   });
 
   await attachRecentBlockhash(connection, transaction, payer.publicKey);
+
+  signers.push(payer);
   transaction.partialSign(...signers);
+  console.log("Signature Verified: ", transaction.verifySignatures());
 
   console.log("Transaction:\n", transaction);
 
-  const response = await connection.sendTransaction(
-    transaction,
-    [...signers, payer],
-    {
-      skipPreflight: true,
-    }
-  );
+  const response = await connection.sendTransaction(transaction, signers, {
+    skipPreflight: true,
+    preflightCommitment: "confirmed",
+    maxRetries: 5,
+  });
 
   return response;
 };
