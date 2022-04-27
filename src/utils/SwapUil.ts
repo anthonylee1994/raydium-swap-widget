@@ -175,7 +175,7 @@ const confirmSwapTransaction = async (
     connection,
     transaction,
     signers,
-    { skipPreflight: false }
+    { skipPreflight: true }
   );
 
   return response;
